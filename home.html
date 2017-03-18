@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Pomodoro</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-8">
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+	<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+	
+	
+	<script type="text/javascript">
+		
+		$(document).ready(function(){
+		//alert("halo");
+		var sd, bd, rd, sbr = 0;	
+		var sd_mili = 0;
+		var date = 0;
+		var countDownInterval = 0;
+		var miliseconds = 0 ;
+		var running_state = "session" ; //session, break, rest
+
+		var countSession = 0;
+		var countBreak	= 0;
+		var countPomodoro = 0;
+
+		var state = "state_0"; 
+		/*
+			state_0 = initiate
+			state_1 = started
+			state_2 = paused
+			state_3 = stopped
+			state_4 = resetted
+			*/
+
+		// initiate
+		initParam();
+		state_0();
+
+		function state_0(){	// initiate
+			$("#sd").val(sd);
+			$("#sd").prev().val(sd);
+
+			$("#bd").val(bd);
+			$("#bd").prev().val(bd);
+
+			$("#rd").val(rd);
+			$("#rd").prev().val(rd);
+
+			$("#sbr").val(sbr);
+			$("#sbr").prev().val(sbr);
+
+			running_state = "session" ;
+
+			sd_mili = sd*60*1000;
+			bd_mili = bd*60*1000;
+			rd_mili = rd*60*1000;
+			
+			miliseconds = sd_mili;
+
+			date = new Date(sd_mili);
+			$(".minutes").html(displayNumber(date.getMinutes()));
+			$(".second").html(displayNumber(date.getSeconds()));
+			
+			$('[name="start"]').attr("disabled",false);
+			$('[name="pause"]').attr("disabled",true);
+			$('[name="stop"]').attr("disabled",true);
+
+			$("#progress").val(0);
+			$("#progress").attr("max",sd_mili);
+
+			$(".running_state").html("");
+			$(".running_state").css("background-color","white");
+
+			$(".info_session").html("0");
+			$(".info_break").html("0");
+			$(".info_pomodoro").html("0");
+		}
+
+		function state_1(){	//started (Run button is pressed)
+			$('[name="start"]').attr("disabled",true);
+			$('[name="pause"]').attr("disabled",false);
+			$('[name="stop"]').attr("disabled",false);
+		}
+
+		function state_2(){	//paused (Pause button is pressed)
+			$('[name="start"]').attr("disabled",false);
+			$('[name="pause"]').attr("disabled",false);
+			$('[name="stop"]').attr("disabled",false);
+		}
+
+		function initParam(){
+		 	sd = 25;	// session duration
+		 	bd = 5;		// break duration
+		 	rd = 15;	// rest duration
+		 	sbr = 4;	// number of session before rest
+		 	console.log("Session duration: "+sd);
+		 	console.log("Break duration: "+bd);
+		 	console.log("Rest duration: "+rd);
+		 	console.log("Session Before Rest: "+sbr);
+		 	console.log("---");
+		 }
+
+		 function setParam(){
+		 	sd = $("#sd").val();
+		 	bd = $("#bd").val();
+		 	rd = $("#rd").val();
+		 	sbr = $("#sbr").val();
+		 	console.log("Session duration: "+sd);
+		 	console.log("Break duration: "+bd);
+		 	console.log("Rest duration: "+rd);
+		 	console.log("Session Before Rest: "+sbr);
+		 	console.log("---");
+		 }
+
+		 function countDown(){
+
+	 	 	var ico = "";
+
+	 	 	if (running_state=="session"){
+	 	 		//ico = "&#x26BD;";
+	 	 		ico = "&diams;";
+	 	 	}else{
+	 	 		ico = "&hearts;";
+	 	 	}
+
+		 	var img1 = "work.png";
+		 	var img2 = "rest.png";
+
+		 	var initProgress = $("#progress").val();
+		 	$("#progress").val(initProgress+1000);
+
+		 	if(sd_mili===0){	// WHEN "DOING TASK" IS OVER
+		 		console.log("session end");
+		 	countSession += 1;
+
+		 	if(countSession % sbr === 0){
+		 		miliseconds = rd_mili;
+		 		notifyMe("Take a rest.. (long break)",img2);
+		 		running_state = "rest" ;
+		 	}else{
+		 		notifyMe("Take a break..",img2);
+		 		miliseconds = bd_mili;
+		 		running_state = "break";		 			
+		 	}
+		 	sd_mili = sd*60*1000;
+		 	$("#progress").val(0);
+		 	$("#progress").attr("max",miliseconds);
+		 }
+
+		 	if(bd_mili===0){	// WHEN "BREAK" IS OVER
+		 		notifyMe("Back to work !",img1);
+		 		console.log("break end");
+		 	countBreak += 1;
+		 	miliseconds = sd_mili;
+		 	bd_mili = bd*60*1000;
+		 	running_state = "session";
+		 	$("#progress").val(0);
+		 	$("#progress").attr("max",miliseconds);
+		 }
+
+		 	if(rd_mili===0){	// WHEN "REST" IS OVER
+		 		notifyMe("Back to work !",img1);
+		 		console.log("rest end");
+		 	countPomodoro += 1;
+		 	miliseconds = sd_mili;
+		 	rd_mili = rd*60*1000;
+		 	running_state = "session";
+		 	$("#progress").val(0);
+		 	$("#progress").attr("max",miliseconds);
+		 }
+
+		 if(running_state=="session"){
+		 	sd_mili -=1000;
+		 	miliseconds = sd_mili;
+		 }else if(running_state=="break"){
+		 	bd_mili -=1000;
+		 	miliseconds = bd_mili;
+		 }else if(running_state=="rest"){
+		 	rd_mili -=1000;
+		 	miliseconds = rd_mili
+		 }
+
+		 date = new Date(miliseconds);
+
+		 console.log("STATE: "+running_state);
+		 console.log("var miliseconds: "+miliseconds);
+		 console.log("var session rem: "+sd_mili);
+		 console.log("var break rem: "+bd_mili);
+		 console.log("var rest rem: "+rd_mili);
+		 console.log("countPomodoro: "+countPomodoro);
+		 console.log("countSession: "+countSession);
+		 console.log("countBreak: "+countBreak);
+		 console.log(date.getMinutes()+":"+date.getSeconds());
+		 console.log(displayNumber(date.getMinutes())+":"+displayNumber(date.getSeconds()));
+		 console.log("Progress Value: "+ $("#progress").val());
+		 console.log("-------");
+
+		 $(".minutes").html(displayNumber(date.getMinutes()));
+		 $(".second").html(displayNumber(date.getSeconds()));
+
+		 datex = new Date(miliseconds+800);
+	 	 $("title").html(function(){
+	 		var a = ico +" "+displayNumber(datex.getMinutes()) + ":" + displayNumber(datex.getSeconds()) + " " +running_state;
+	 		return a;
+	 	 });
+
+		 displayRunningState(running_state,ico);
+
+		 $(".info_session").html(countSession);
+		 $(".info_break").html(countBreak);
+		 $(".info_pomodoro").html(countPomodoro);
+		}
+
+		function displayRunningState(running_state,ico){
+			if(running_state==="session"){
+				styleRunningState(ico+" Doing tasks","#c60509","white");
+			}else if(running_state==="break"){
+				styleRunningState(ico+" Take a break","green","white");
+			}else if(running_state==="rest"){
+				styleRunningState(ico+" Take a rest (Long Break)","blue","white");
+			}
+		}
+
+		function styleRunningState(message,bgcolor,fontcolor){
+			$(".running_state").html(message);
+			$(".running_state").css("background-color",bgcolor);
+			$(".running_state").css("color",fontcolor);
+		}
+
+		function displayNumber(number){
+			if(number.toString().length===1){
+				return "0"+number;
+			}else{
+				return number;
+			}
+		}
+
+
+		$(".slider").on('input',function(){
+			$(this).prev().val($(this).val());
+		});
+
+		$(".slider").on('change',function(){
+
+			eval($(this).attr('id') +" = "+ $(this).val());
+
+			if(countDownInterval){
+				clearInterval(countDownInterval);
+				countDownInterval = 0	
+			}
+			state_0();
+
+			console.log("Session duration: "+sd);
+			console.log("Break duration: "+bd);
+			console.log("Rest duration: "+rd);
+			console.log("Session Before Rest: "+sbr);
+			console.log("---");
+
+		}) ;
+
+		$('[name="start"]').click(function(){
+			state_1();
+			countDownInterval = setInterval(function(){countDown();},1000);
+		});
+
+		$('[name="pause"]').click(function(){
+			state_2();
+			clearInterval(countDownInterval);
+			$("title").html("Paused");
+		});
+
+		$('[name="stop"]').click(function(){
+			clearInterval(countDownInterval);
+			countDownInterval = 0;
+			countSession = 0;
+			countBreak	= 0;
+			countPomodoro = 0;
+			state_0();
+			$("title").html("Pomodoro");
+		});
+
+		$('[name="save"]').click(function(){
+			setParam();
+			if(countDownInterval){
+				clearInterval(countDownInterval);
+				countDownInterval = 0	
+			}
+			state_0();
+		});
+
+		$('[name="reset"]').click(function(){
+			initParam();
+			if(countDownInterval){
+				clearInterval(countDownInterval);
+				countDownInterval = 0	
+			}
+			state_0();
+		});
+
+
+			function notifyMe(msg,img) {
+				var a = msg||"hello";
+			  // Let's check if the browser supports notifications
+			  if (!("Notification" in window)) {
+			    alert("This browser does not support desktop notification");
+			  }
+
+			  // Let's check whether notification permissions have already been granted
+			  else if (Notification.permission === "granted") {
+			    // If it's okay let's create a notification
+			    console.log("notification granted");
+			    var notification = new Notification(a,{icon:img});
+			  }
+
+			  // Otherwise, we need to ask the user for permission
+			  else if (Notification.permission !== 'denied') {
+			    Notification.requestPermission(function (permission) {
+			      // If the user accepts, let's create a notification
+			      if (permission === "granted") {
+			        var notification = new Notification(a,{icon:img});
+			      }
+			    });
+			  }
+
+			  // At last, if the user has denied notifications, and you 
+			  // want to be respectful there is no need to bother them any more.
+			}Notification.requestPermission().then(function(result) {
+			  console.log(result);
+			});function spawnNotification(theBody,theIcon,theTitle) {
+			  var options = {
+			      body: theBody,
+			      icon: theIcon
+			  }
+			  var n = new Notification(theTitle,options);
+			}
+
+
+});
+
+</script>
+
+<style type="text/css">
+	@import url('https://fonts.googleapis.com/css?family=Pacifico');
+
+	body{
+		background-color: #a5a5a5;
+	}
+
+	div.box{
+		background-color: #c60509;
+		color: white;
+		margin: auto;
+		margin-top: 10px;
+		border:solid #8c0103 1px;
+		border-top:solid #8c0103 0px;
+		width: 259px;
+		height: 450px;
+		padding:10px;
+		box-shadow: inset 1px 1px 10px 0px rgba(0, 0, 0, 0.5), 5px 5px 10px 0px rgba(0, 0, 0, 0.5);
+		border-radius: 5px;
+	}
+
+	div.setting, div.timer{
+		border:solid #e0e0e0 1px;
+		border-top:solid #e0e0e0 0px;
+		padding:10px;
+	}
+
+	input.slider{
+		width: 210px;
+	}
+
+	input.parameter{
+		width: 30px;
+		height:  20px;
+		text-align: right;
+		background-color: white;
+		border: 0px;
+	}
+
+	div.time{
+		text-align: center;
+		padding: 1px;
+		background-color: white;
+	}
+
+	div.timer, div.setting{
+		background-color: white;
+		color: black;
+	}
+
+	span.minutes, span.separator{
+		font-size: 80px;
+	}
+
+	span.second{
+		font-size: 80px;
+	}
+
+	#progress{
+		width: 210px;
+		height: 10px;
+	}
+
+	.title{
+		font-family: 'Pacifico', cursive;
+		text-align: center;
+		font-size: 50px;
+	}
+
+	input[type='button']:disabled{
+		color: #c9c9c9;
+	}
+
+	input[type='button']{
+		width: 60px;
+		box-shadow:  1px 1px 2px 0px rgba(0, 0, 0, 0.5);	
+	}
+
+	.running_state{
+		height: 20px;
+		text-align: center;
+	}
+
+	a{
+		color: white;
+	}
+
+</style>
+</head>
+
+<body>		
+	<div class="box">
+		<h1 class="title">Pomodoro</h1>
+		<ul class = "nav nav-tabs" >
+			<li class="active"><a data-toggle="tab" href="#timer"  >Timer</a></li>
+			<li><a data-toggle="tab" href="#setting"  >Setting</a></li>
+		</ul>
+
+		<div class="tab-content ">
+			<div id="timer" class="tab-pane fade in active timer" >
+				<div class="running_state"></div>
+				<div class="time">
+					<span class="minutes"></span>
+					<span class="separator">:</span>
+					<span class="second"></span>
+					<br/>
+					<input type="button" name="start" value="Run" />
+					<input type="button" name="stop" value="Reset" />
+					<input type="button" name="pause" value="Pause" />
+					<br/>
+					<br/>
+					<progress id="progress" value="" max=""></progress>
+				</div>
+				<div class="statistic">
+					Total Session: <span  class="info_session">0</span>
+					<br/>
+					Total Break: <span  class="info_break">0</span>
+					<br/>
+					Total Pomodoro Cycle: <span  class="info_pomodoro">0</span>
+					<br/>
+				</div>
+			</div>
+
+			<div id="setting" class="tab-pane fade setting" >
+				<span>Session Duration : </span> <input class="parameter" type="text" disabled="disabled"/> Minutes <input class="slider" type="range" id="sd" min="1" max="60"/> <br/>
+				<span>Break Duration : </span> <input  class="parameter" type="text" disabled="disabled"/> Minutes <input  class="slider" type="range" id="bd" min="1" max="60"/> <br/>
+				<span>Rest Duration : </span> <input  class="parameter" type="text" disabled="disabled"/> Minutes <input class="slider"  type="range" id="rd" min="1" max="60"/> <br/>
+				<span>Pomodoro Cycle : </span> <input  class="parameter" type="text" disabled="disabled"/> Sessions <input  class="slider" type="range" id="sbr" min="1" max="10"/> <br/>
+				<input type="button" name="reset" value="Default" />
+				<!-- <input type="button" name="save" value="Save" /> -->			
+			</div>
+
+
+		</div>
+	</div>
+	<br/>
+	<div class="text-center" style="color:black">by : <a style="color:black;" href='https://codepen.io/risyana/'>Eka</a></div>	
+
+</body>
+</html>
